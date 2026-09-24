@@ -1,0 +1,6 @@
+{
+  "name": "Excel Data Format Transformer",
+  "description": "Aplikasi konversi dan transformasi format data Excel dari Format Awal (Image 1) ke Format Target (Image 2) dengan dukungan Import/Export XLSX, Unpivot, Fill Merged Cells, Visual Column Mapping, dan AI Vision Converter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
