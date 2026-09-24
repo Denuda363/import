@@ -7,6 +7,7 @@ import {
   Layers,
   ArrowRight,
   ImageIcon,
+  Database,
 } from 'lucide-react';
 import { PRESET_SCENARIOS } from '../utils/presets';
 import { PresetScenario } from '../types/transformer';
@@ -16,6 +17,7 @@ interface HeaderProps {
   onSelectPreset: (preset: PresetScenario) => void;
   onOpenVisionModal: () => void;
   onOpenHelpModal: () => void;
+  onOpenDatabaseModal: () => void;
   onReset: () => void;
 }
 
@@ -24,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectPreset,
   onOpenVisionModal,
   onOpenHelpModal,
+  onOpenDatabaseModal,
   onReset,
 }) => {
   return (
@@ -52,6 +55,17 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Local Database Button */}
+            <button
+              onClick={onOpenDatabaseModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors shadow-2xs"
+              title="Buka Manajemen Database Lokal (Riwayat, Template, Dataset tersimpan)"
+            >
+              <Database className="w-4 h-4 text-emerald-600" />
+              <span>Database Lokal</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" title="Database Lokal Aktif"></span>
+            </button>
+
             <button
               onClick={onOpenVisionModal}
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors shadow-2xs"

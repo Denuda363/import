@@ -12,6 +12,7 @@ import {
   Table as TableIcon,
   ChevronLeft,
   ChevronRight,
+  Database,
 } from 'lucide-react';
 import { DataRow } from '../types/transformer';
 import { copyTableToClipboard, exportToCsv, exportToExcel } from '../utils/excel';
@@ -22,6 +23,7 @@ interface DataPreviewTableProps {
   targetHeaders: string[];
   targetRows: DataRow[];
   transformationLogs: string[];
+  onSaveToDatabase?: () => void;
 }
 
 export const DataPreviewTable: React.FC<DataPreviewTableProps> = ({
@@ -30,10 +32,12 @@ export const DataPreviewTable: React.FC<DataPreviewTableProps> = ({
   targetHeaders,
   targetRows,
   transformationLogs,
+  onSaveToDatabase,
 }) => {
   const [viewMode, setViewMode] = useState<'split' | 'target' | 'source'>('split');
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
+  const [dbSaved, setDbSaved] = useState(false);
   const [exportName, setExportName] = useState('Data_Hasil_Image2');
 
   // Pagination for Source
@@ -81,10 +85,24 @@ export const DataPreviewTable: React.FC<DataPreviewTableProps> = ({
 
   const handleExportXlsx = () => {
     exportToExcel(targetHeaders, targetRows, `${exportName}.xlsx`);
+    if (onSaveToDatabase) {
+      onSaveToDatabase();
+    }
   };
 
   const handleExportCsv = () => {
     exportToCsv(targetHeaders, targetRows, `${exportName}.csv`);
+    if (onSaveToDatabase) {
+      onSaveToDatabase();
+    }
+  };
+
+  const handleManualSaveDb = () => {
+    if (onSaveToDatabase) {
+      onSaveToDatabase();
+      setDbSaved(true);
+      setTimeout(() => setDbSaved(false), 2000);
+    }
   };
 
   return (
@@ -142,6 +160,24 @@ export const DataPreviewTable: React.FC<DataPreviewTableProps> = ({
 
         {/* Export Buttons */}
         <div className="flex items-center space-x-2 text-xs">
+          <button
+            onClick={handleManualSaveDb}
+            className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-semibold flex items-center space-x-1.5 transition-all shadow-2xs"
+            title="Simpan konfigurasi dan hasil transformasi ini ke Database Lokal"
+          >
+            {dbSaved ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700">Tersimpan di DB!</span>
+              </>
+            ) : (
+              <>
+                <Database className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Simpan ke DB</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={handleCopyClipboard}
             className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg font-semibold flex items-center space-x-1.5 transition-all shadow-2xs"

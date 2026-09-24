@@ -10,6 +10,7 @@ import { TransformStudio } from './components/TransformStudio';
 import { DataPreviewTable } from './components/DataPreviewTable';
 import { AiVisionModal } from './components/AiVisionModal';
 import { HelpGuideModal } from './components/HelpGuideModal';
+import { LocalDatabaseModal } from './components/LocalDatabaseModal';
 import { PRESET_SCENARIOS } from './utils/presets';
 import {
   ColumnMappingRule,
@@ -17,8 +18,14 @@ import {
   TableData,
   TransformationPipeline,
 } from './types/transformer';
+import {
+  SavedDataset,
+  SavedHistoryItem,
+  SavedTemplate,
+} from './types/database';
 import { executeTransformationPipeline } from './utils/transformEngine';
 import { parseSheet } from './utils/excel';
+import { saveHistoryItem } from './utils/localDatabase';
 
 export default function App() {
   // Active Preset ID
@@ -91,6 +98,7 @@ export default function App() {
   // Modals state
   const [isVisionModalOpen, setIsVisionModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState(false);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   // Compute transformed target data
@@ -199,6 +207,74 @@ export default function App() {
     }
   };
 
+  // Save transformation to local database
+  const handleSaveToHistory = async () => {
+    try {
+      const itemToSave = {
+        title: `Konversi ${tableData.fileName}`,
+        fileName: tableData.fileName,
+        sourceRowCount: tableData.rows.length,
+        targetRowCount: targetData.rows.length,
+        sourceColCount: tableData.headers.length,
+        targetColCount: targetData.headers.length,
+        sourceHeaders: tableData.headers,
+        targetHeaders: targetData.headers,
+        pipeline,
+        sampleSourceRows: tableData.rows.slice(0, 5),
+        sampleTargetRows: targetData.rows.slice(0, 5),
+      };
+
+      // 1. Save to Client IndexedDB
+      await saveHistoryItem(itemToSave);
+
+      // 2. Also sync to local backend filesystem if available
+      try {
+        await fetch('/api/db/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(itemToSave),
+        });
+      } catch {
+        // Local client storage already succeeded
+      }
+    } catch (err) {
+      console.error('Failed to save to local database:', err);
+    }
+  };
+
+  // Load from local DB
+  const handleLoadHistoryItem = (item: SavedHistoryItem) => {
+    setCurrentPresetId(null);
+    if (item.sampleSourceRows && item.sampleSourceRows.length > 0) {
+      setTableData({
+        fileName: item.fileName,
+        sheetNames: ['Sheet1'],
+        currentSheet: 'Sheet1',
+        headers: item.sourceHeaders,
+        rows: item.sampleSourceRows,
+        totalRows: item.sampleSourceRows.length,
+      });
+    }
+    setPipeline(item.pipeline);
+  };
+
+  const handleLoadTemplate = (tpl: SavedTemplate) => {
+    setCurrentPresetId(null);
+    setPipeline(tpl.pipeline);
+  };
+
+  const handleLoadDataset = (dataset: SavedDataset) => {
+    setCurrentPresetId(null);
+    setTableData({
+      fileName: dataset.fileName || `${dataset.name}.xlsx`,
+      sheetNames: [dataset.sheetName || 'Sheet1'],
+      currentSheet: dataset.sheetName || 'Sheet1',
+      headers: dataset.headers,
+      rows: dataset.rows,
+      totalRows: dataset.totalRows,
+    });
+  };
+
   // Apply suggested pipeline from AI Vision Modal
   const handleApplyAiPipeline = (suggested: Partial<TransformationPipeline>) => {
     setPipeline((prev) => ({
@@ -255,6 +331,7 @@ export default function App() {
         onSelectPreset={handleSelectPreset}
         onOpenVisionModal={() => setIsVisionModalOpen(true)}
         onOpenHelpModal={() => setIsHelpModalOpen(true)}
+        onOpenDatabaseModal={() => setIsDatabaseModalOpen(true)}
         onReset={handleReset}
       />
 
@@ -284,6 +361,7 @@ export default function App() {
           targetHeaders={targetData.headers.length > 0 ? targetData.headers : tableData.headers}
           targetRows={targetData.rows.length > 0 ? targetData.rows : tableData.rows}
           transformationLogs={targetData.logs}
+          onSaveToDatabase={handleSaveToHistory}
         />
       </main>
 
@@ -291,11 +369,21 @@ export default function App() {
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         <p>
           Excel Data Format Transformer — Konversi spreadsheet cepat, aman, dan presisi dari Format
-          Image 1 ke Format Image 2.
+          Image 1 ke Format Image 2 didukung Database Lokal terintegrasi.
         </p>
       </footer>
 
       {/* Modals */}
+      <LocalDatabaseModal
+        isOpen={isDatabaseModalOpen}
+        onClose={() => setIsDatabaseModalOpen(false)}
+        currentPipeline={pipeline}
+        currentTableData={tableData}
+        onLoadHistoryItem={handleLoadHistoryItem}
+        onLoadTemplate={handleLoadTemplate}
+        onLoadDataset={handleLoadDataset}
+      />
+
       <AiVisionModal
         isOpen={isVisionModalOpen}
         onClose={() => setIsVisionModalOpen(false)}
